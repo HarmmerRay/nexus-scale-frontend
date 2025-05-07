@@ -81,13 +81,13 @@
               @keyup.enter="goToPage"
               @input="handleInput">  <!-- 输入过滤 -->
 
-          <button
-              class="page-btn"
-              @click="goToPage"
-              :disabled="!jumpPage || jumpPage < 1 || jumpPage > totalPages"
-          >
-            跳转
-          </button>
+<!--          <button-->
+<!--              class="page-btn"-->
+<!--              @click="goToPage"-->
+<!--              :disabled="jumpPage < 1 || jumpPage > totalPages"-->
+<!--          >-->
+<!--            跳转-->
+<!--          </button>-->
         </div>
 
         <button
@@ -222,14 +222,13 @@ let jumpPage = 1;
 // 分页操作
 const goToPage = () => {
   console.log("跳转页面");
-  const targetPage = parseInt(jumpPage);
+  const targetPage = jumpPage;
   console.log('targetPage',targetPage)
   console.log('totalPages',totalPages.value)
   if (targetPage && targetPage >= 1 && targetPage <= totalPages.value) {
     state.currentPage = targetPage; // 更新当前页状态
     console.log(state.currentPage);
     jumpPage = ''; // 清空输入框
-    // 可选：触发数据加载逻辑
     log_load_data(state.currentPage,state.pageSize,state.searchKeyword).then((result) => {
       if (result.data.state === 200){
         state.total = result.data.total;
@@ -242,7 +241,8 @@ const goToPage = () => {
 }
 const handleInput = (e) => {
   e.target.value = e.target.value.replace(/[^\d]/g, ''); // 过滤非数字字符
-  jumpPage = e.target.value || ''; // 更新绑定值
+  jumpPage = parseInt(e.target.value) || 1; // 更新绑定值
+  console.log('jumpPage',jumpPage);
 }
 function prevPage() {
   if (state.currentPage > 1) {
