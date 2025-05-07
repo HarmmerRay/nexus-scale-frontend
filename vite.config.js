@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import * as fs from "node:fs";
+import * as fs from "node:fs"; //  npm install @types/node
 
 export default defineConfig({
   plugins: [
