@@ -104,7 +104,7 @@
 
 <script setup>
 import {computed, ref} from 'vue';
-import {deleteLog, log_load_data} from "@/api/log.js";
+import {batchDeleteLog, deleteLog, log_load_data} from "@/api/log.js";
 
 // 模拟日志数据（实际开发中可通过 props 接收或 API 获取）
 const logList = ref([
@@ -304,7 +304,16 @@ function handleBatchDelete() {
   const indicesToDelete = selectedLogs.value.map(index =>
       (state.currentPage - 1) * state.pageSize + index
   ).sort((a, b) => b - a);
-
+  console.log(indicesToDelete)
+  console.log(indicesToDelete.at(0))
+  console.log(indicesToDelete.at(length - 1))
+  console.log(logList.value[indicesToDelete.at(0)].operation_time)
+  console.log(logList.value[indicesToDelete.at(length - 1)].operation_time)
+  const start_time = format_time(logList.value[indicesToDelete.at(0)].operation_time)
+  const end_time = format_time(logList.value[indicesToDelete.at(length - 1)].operation_time)
+  batchDeleteLog(start_time,end_time).then((res) => {
+    console.log(res)
+  });
   indicesToDelete.forEach(index => {
     logList.value.splice(index, 1);
   });

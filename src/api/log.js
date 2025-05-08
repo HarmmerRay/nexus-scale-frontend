@@ -22,12 +22,13 @@ export const deleteLog = (dateTime) => {
     })
 }
 
-export const batchDeleteLog = (dateTimeList) => {
+export const batchDeleteLog = (start_time,end_time) => {
     return axi({
         url: "/api/log/batchDeleteLog",
         method: "POST",
         params:{
-            dateTimeList : dateTimeList
+            startTime: start_time,
+            endTime: end_time
         }
     })
 }
