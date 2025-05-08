@@ -103,8 +103,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import {log_load_data} from "@/api/log.js";
+import {computed, ref} from 'vue';
+import {deleteLog, log_load_data} from "@/api/log.js";
 
 // 模拟日志数据（实际开发中可通过 props 接收或 API 获取）
 const logList = ref([
@@ -316,9 +316,32 @@ function handleBatchDelete() {
 // 单个删除
 function handleDelete(index) {
   const realIndex = (state.currentPage - 1) * state.pageSize + index;
+  // 获取该行数据
+  const rowData = logList.value[realIndex];
+  // 获取该行数据的 datetime
+  const datetime = format_time(rowData.operation_time);
+  console.log(datetime)
+  // 调用 deleteLog 方法
+  deleteLog(datetime);
   logList.value.splice(realIndex, 1);
 }
 
+function format_time(operation_time) {
+  const date = new Date(operation_time);
+
+  const options = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  };
+
+  const formatter = new Intl.DateTimeFormat('zh-CN', options);
+  return formatter.format(date).replace(/\//g, '-');
+}
 const handleSearchLog = () => {
   // 搜索逻辑待实现
 }
