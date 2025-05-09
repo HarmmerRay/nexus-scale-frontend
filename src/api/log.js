@@ -16,7 +16,7 @@ export const deleteLog = (dateTime) => {
     return axi({
         url: "/api/log/deleteLog",
         method: "POST",
-        params:{
+        params:{ 
             dateTime: dateTime
         }
     })

@@ -353,6 +353,14 @@ function format_time(operation_time) {
 }
 const handleSearchLog = () => {
   // 搜索逻辑待实现
+  log_load_data(state.currentPage,state.pageSize,state.searchKeyword).then((result) => {
+    if (result.data.state === 200){
+      state.total = result.data.total;
+      console.log("搜索查询到的数据",result.data.data);
+      update_data_list(result.data.data)
+      update_pagination()
+    }
+  })
 }
 
 </script>
