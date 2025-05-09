@@ -5,7 +5,7 @@
       <div class="search-group">
         <input
             type="text"
-            v-model="searchQuery"
+            v-model="state.searchKeyword"
             placeholder="搜索日志..."
             class="search-input"
         />
@@ -353,6 +353,7 @@ function format_time(operation_time) {
 }
 const handleSearchLog = () => {
   // 搜索逻辑待实现
+  // console.log(state.currentPage+" "+ state.pageSize + " " + state.searchKeyword)
   log_load_data(state.currentPage,state.pageSize,state.searchKeyword).then((result) => {
     if (result.data.state === 200){
       state.total = result.data.total;
