@@ -8,6 +8,7 @@
             v-model="state.searchKeyword"
             placeholder="搜索日志..."
             class="search-input"
+            @keyup.enter="handleSearchLog"
         />
       </div>
       <button class="search-btn" @click="handleSearchLog">搜索</button>
