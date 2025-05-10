@@ -27,3 +27,35 @@ export const verify_token = () => {
         method: "POST",
     })
 }
+
+export const user_load_data = (currentPage,pageSize,searchKeyWord) => {
+    return axi({
+        url: "/api/user/load_data",
+        method: "GET",
+        params:{
+            currentPage: currentPage,
+            pageSize: pageSize,
+            searchKeyWord: searchKeyWord
+        }
+    })
+}
+
+export const deleteUser = (id) => {
+    return axi({
+        url: "/api/user/deleteUser",
+        method: "POST",
+        params:{
+            id: id
+        }
+    })
+}
+
+export const batchDeleteUser = (ids) => {
+    return axi({
+        url: "/api/user/batchDeleteUser",
+        method: "POST",
+        data:{
+            ids:ids
+        }
+    })
+}
