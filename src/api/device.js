@@ -10,3 +10,54 @@ export const all_devices =(user_id) =>{
         }
     })
 }
+
+// 添加设备
+export const add_device =(deviceMac,deviceName) => {
+    return axi({
+        url: "/api/device/create_device",
+        method: "POST",
+        data:{
+            deviceName:deviceName,
+            deviceMac:deviceMac,
+        }
+    })
+}
+// 搜索设备
+export const search_device =(searchKey) =>{
+    return axi({
+        url: "/api/device/search_device",
+        method: "GET",
+        params:{
+            searchKey:searchKey,
+        }
+    })
+}
+// 删除设备
+export const delete_device =(deviceId) => {
+    return axi({
+        url: "/api/device/delete_device",
+        method: "POST",
+        params:{
+            deviceId:deviceId,
+        }
+    })
+}
+// 批量删除设备
+export const batch_delete_devices =(deviceIds) => {
+    return axi({
+        url: "/api/device/batch_delete_devices",
+        method: "POST",
+        data:deviceIds
+    })
+}
+// 修改设备信息
+export const update_device_name =(deviceId,deviceName) => {
+    return axi({
+        url: "/api/device/update_device_name",
+        method: "POST",
+        params:{
+            deviceId:deviceId,
+            deviceName:deviceName,
+        }
+    })
+}
