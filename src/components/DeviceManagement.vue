@@ -1,6 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
-import {add_device, all_devices, batch_delete_devices, delete_device, search_device} from '@/api/device.js'
+import {
+  add_device,
+  all_devices,
+  batch_delete_devices,
+  delete_device,
+  search_device,
+  update_device_name
+} from '@/api/device.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
@@ -36,6 +43,11 @@ const fetchDevices = async () => {
   try {
     const res = await all_devices(props.user.userId)
     devices.value = res.data.data
+    // 为每个device添加kv isEditing:false
+    devices.value = res.data.data.map(device => ({
+      ...device,
+      isEditing: false // 为每个设备添加编辑状态
+    }))
     console.log(res.data)
   } catch (error) {
     ElMessage.error('获取设备列表失败')
@@ -54,6 +66,11 @@ const handleSearch = async () => {
   try {
     const res = await search_device(keyword)
     searchDevices.value = res.data.data || []
+    // 为每个device添加kv isEditing:false
+    searchDevices.value = res.data.data.map(device => ({
+      ...device,
+      isEditing: false // 为每个设备添加编辑状态
+    }))
   } catch (error) {
     ElMessage.error('搜索设备失败')
     searchDevices.value = []
@@ -150,7 +167,7 @@ const generateMacAddress = async () => {
 
 // 组合两部分形成完整的随机字符串
   const randomPart = `${timestamp}${randomDigits}`;
-  formData.value.macAddress = `${prefix}:${randomPart}`
+  formData.value.macAddress = `${prefix}-${randomPart}`
 }
 
 // 表单提交处理
@@ -177,6 +194,26 @@ const handleAddDevice = () => {
 
 const viewDeviceDetail = async (device) => {
   console.log("打开设备数据呈现页")
+}
+const handleSave = async (device) => {
+  const res = await update_device_name(device.deviceId, device.deviceName)
+  console.log(res.data)
+  device.isEditing = false
+}
+
+const toggleEditMode = (device) => {
+  device.isEditing = true
+  $nextTick(() => {
+    this.$refs.nameInput.focus()
+  })
+}
+const popupVisible = ref(false)
+const fullMac = ref('')
+const showFullMac = (mac)=>{
+  fullMac.value = mac;
+  popupVisible.value = true;
+  // 3秒后自动隐藏（可选）
+  setTimeout(() => popupVisible.value = false, 3000);
 }
 // 初始化获取设备
 fetchDevices()
@@ -290,9 +327,18 @@ fetchDevices()
             >
             <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
           </div>
+
           <div @click="viewDeviceDetail(device)">
-            <h3>{{ device.deviceName }}</h3>
-            <p>设备号: {{ device.deviceMac }}</p>
+            <h3>{{device.deviceName}}</h3>
+            <input
+                type="text"
+                v-model="device.deviceName"
+                class="device-name-input"
+                @blur="handleSave(device)"
+            >
+            <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+              设备号: {{ device.deviceMac }}
+            </p>
           </div>
         </div>
       </div>
@@ -318,8 +364,33 @@ fetchDevices()
             <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
           </div>
           <div @click="viewDeviceDetail(device)">
-            <h3>{{ device.deviceName }}</h3>
-            <p>设备号: {{ device.deviceMac }}</p>
+            <!-- 设备名称输入框，双向绑定 device.deviceName -->
+            <h3
+                v-if="!device.isEditing"
+                @dblclick="toggleEditMode(device)"
+                class="cursor-pointer"
+            >{{ device.deviceName }}</h3>
+
+            <div v-else class="relative">
+              <input
+                  type="text"
+                  v-model="device.deviceName"
+                  class="device-name-input w-full"
+                  @blur="handleSave(device)"
+                  @keyup.enter="handleSave(device)"
+                  ref="nameInput"
+              >
+            </div>
+            <p
+                class="device-mac"
+                @click="showFullMac(device.deviceMac)"
+            >
+              设备号: {{ device.deviceMac }}
+            </p>
+            <!-- 弹出层 -->
+            <div v-if="popupVisible" class="popup">
+              {{ fullMac }}
+            </div>
           </div>
         </div>
       </div>
@@ -328,7 +399,6 @@ fetchDevices()
 </template>
 
 <style scoped>
-
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -402,7 +472,6 @@ fetchDevices()
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
 }
 
 .device-checkbox {
@@ -599,6 +668,33 @@ input[type="text"], select {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+.device-mac {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  cursor: pointer;
+}
+
+.popup {
+  position: fixed;
+  padding: 8px 12px;
+  background: #333;
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 1000;
+}
+.device-name-input {
+  /* 继承 h3 的基础样式 */
+  all: unset;
+  font-size: 1.17em;
+  font-weight: bold;
+}
+
+.device-name-input:focus {
+  border-bottom: 2px solid #409eff; /* 聚焦时显示下划线 */
 }
 </style>
 
