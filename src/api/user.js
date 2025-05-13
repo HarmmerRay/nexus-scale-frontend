@@ -30,32 +30,81 @@ export const verify_token = () => {
 
 export const user_load_data = (currentPage,pageSize,searchKeyWord) => {
     return axi({
-        url: "/api/user/load_data",
+        url: "/api/user/search_users",
         method: "GET",
         params:{
             currentPage: currentPage,
             pageSize: pageSize,
-            searchKeyWord: searchKeyWord
+            keyword: searchKeyWord
         }
     })
 }
-
-export const deleteUser = (id) => {
+export const upload_avatar = (formData) => {
     return axi({
-        url: "/api/user/deleteUser",
+        url: '/api/user/upload_avatar',
+        method: 'POST',
+        data: formData
+    })
+}
+
+export const create_user = (user_name,phone_number,level,avatarUrl) => {
+    return axi({
+        url: "/api/user/create_user",
         method: "POST",
         params:{
-            id: id
+            phoneNumber: phone_number,
+            level: level,
+            userName: user_name,
+            avatarUrl: avatarUrl
+        }
+    })
+}
+export const deleteUser = (id) => {
+    return axi({
+        url: "/api/user/delete_user",
+        method: "POST",
+        params:{
+            userId: id
         }
     })
 }
 
 export const batchDeleteUser = (ids) => {
     return axi({
-        url: "/api/user/batchDeleteUser",
+        url: "/api/user/batch_delete_users",
         method: "POST",
-        data:{
-            ids:ids
+        data:ids
+    })
+}
+
+export const change_user_name = (id,username) => {
+    return axi({
+        url: "/api/user/change_user_name",
+        method: "POST",
+        params:{
+            userId:id,
+            username:username
+        }
+    })
+}
+
+export const change_user_level = (id,level) => {
+    return axi({
+        url: "/api/user/change_user_level",
+        method: "POST",
+        params:{
+            level:level,
+            userId:id,
+        }
+    })
+}
+
+export const search_users = (keyword) => {
+    return axi({
+        url: "/api/user/search_users",
+        method: "POST",
+        params:{
+            keyword:keyword
         }
     })
 }

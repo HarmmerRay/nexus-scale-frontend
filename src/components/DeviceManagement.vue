@@ -221,6 +221,7 @@ fetchDevices()
 
 <template>
   <div class="device-management">
+    <!-- 首页、设备收集数据呈现页    -->
     <!-- 操作工具栏 -->
     <div class="toolbar">
       <div class="left-actions">
@@ -494,8 +495,7 @@ fetchDevices()
 
 .device-management {
   max-width: 100%;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin: 20px auto;
 }
 
 .add-device-btn {
