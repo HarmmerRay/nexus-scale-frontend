@@ -83,7 +83,7 @@ export const change_user_name = (id,username) => {
         method: "POST",
         params:{
             userId:id,
-            username:username
+            userName:username
         }
     })
 }
@@ -99,6 +99,27 @@ export const change_user_level = (id,level) => {
     })
 }
 
+export const change_avatar = (id,avatarUrl) => {
+    return axi({
+        url: "/api/user/change_avatar",
+        method: "POST",
+        params:{
+            avatarUrl:avatarUrl,
+            userId:id,
+        }
+    })
+}
+
+export const change_phone_number = (id,phone_number) => {
+    return axi({
+        url: "/api/user/change_phone",
+        method: "POST",
+        params:{
+            phoneNumber:phone_number,
+            userId:id,
+        }
+    })
+}
 export const search_users = (keyword) => {
     return axi({
         url: "/api/user/search_users",
