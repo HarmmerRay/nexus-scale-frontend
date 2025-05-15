@@ -46,7 +46,8 @@ const fetchDevices = async () => {
     // 为每个device添加kv isEditing:false
     devices.value = res.data.data.map(device => ({
       ...device,
-      isEditing: false // 为每个设备添加编辑状态
+      isEditing: false, // 为每个设备添加编辑状态
+      fullMac: false // 为每个设备添加整个mac呈现状态
     }))
     console.log(res.data)
   } catch (error) {
@@ -69,7 +70,8 @@ const handleSearch = async () => {
     // 为每个device添加kv isEditing:false
     searchDevices.value = res.data.data.map(device => ({
       ...device,
-      isEditing: false // 为每个设备添加编辑状态
+      isEditing: false, // 为每个设备添加编辑状态
+      fullMac: false // 为每个设备添加整个mac呈现状态
     }))
   } catch (error) {
     ElMessage.error('搜索设备失败')
@@ -207,13 +209,10 @@ const toggleEditMode = (device) => {
     this.$refs.nameInput.focus()
   })
 }
-const popupVisible = ref(false)
-const fullMac = ref('')
-const showFullMac = (mac)=>{
-  fullMac.value = mac;
-  popupVisible.value = true;
+const showFullMac = (device)=>{
+  device.fullMac = true;
   // 3秒后自动隐藏（可选）
-  setTimeout(() => popupVisible.value = false, 3000);
+  setTimeout(() => device.fullMac = false, 3000);
 }
 // 初始化获取设备
 fetchDevices()
@@ -328,18 +327,34 @@ fetchDevices()
             >
             <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
           </div>
-
           <div @click="viewDeviceDetail(device)">
-            <h3>{{device.deviceName}}</h3>
-            <input
-                type="text"
-                v-model="device.deviceName"
-                class="device-name-input"
-                @blur="handleSave(device)"
+            <!-- 设备名称输入框，双向绑定 device.deviceName -->
+            <h3
+                v-if="!device.isEditing"
+                @dblclick="toggleEditMode(device)"
+                class="cursor-pointer"
+            >{{ device.deviceName }}</h3>
+
+            <div v-else class="relative">
+              <input
+                  type="text"
+                  v-model="device.deviceName"
+                  class="device-name-input w-full"
+                  @blur="handleSave(device)"
+                  @keyup.enter="handleSave(device)"
+                  ref="nameInput"
+              >
+            </div>
+            <p
+                class="device-mac"
+                @click="showFullMac(device)"
             >
-            <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
               设备号: {{ device.deviceMac }}
             </p>
+            <!-- 弹出层 -->
+            <div v-if="device.fullMac " class="popup">
+              {{ device.deviceMac  }}
+            </div>
           </div>
         </div>
       </div>
@@ -384,13 +399,13 @@ fetchDevices()
             </div>
             <p
                 class="device-mac"
-                @click="showFullMac(device.deviceMac)"
+                @click="showFullMac(device)"
             >
               设备号: {{ device.deviceMac }}
             </p>
             <!-- 弹出层 -->
-            <div v-if="popupVisible" class="popup">
-              {{ fullMac }}
+            <div v-if="device.fullMac" class="popup">
+              {{ device.deviceMac }}
             </div>
           </div>
         </div>
