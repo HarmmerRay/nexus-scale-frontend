@@ -223,6 +223,9 @@ const showFullMac = (device)=>{
 }
 // 初始化获取设备
 fetchDevices()
+// 父子组件通信，向父组件发送事件
+const emit = defineEmits(['device-selected']);
+
 </script>
 
 <template>
@@ -373,9 +376,7 @@ fetchDevices()
       <div
           v-for="device in devices"
           :key="device.deviceId"
-          class="device-card"
-          @click="$emit('device-selected', device.deviceId)"
-      >
+          class="device-card">
         <!-- 保持设备卡片代码不变 -->
         <div class="card-header">
           <input
@@ -387,7 +388,7 @@ fetchDevices()
           >
           <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
         </div>
-        <div @click="viewDeviceDetail(device)">
+        <div @click="$emit('device-selected', device.deviceId)">
           <!-- 设备名称输入框，双向绑定 device.deviceName -->
           <h3
               v-if="!device.isEditing"

@@ -14,7 +14,7 @@
     </div>
 
     <!-- 动态组件容器 -->
-    <component :is="activeComponent" v-if="activeComponent" :user="user"/>
+    <component :is="activeComponent" v-if="activeComponent" :user="user" @device-selected="handleDeviceSelect"/>
   </div>
 </template>
 
