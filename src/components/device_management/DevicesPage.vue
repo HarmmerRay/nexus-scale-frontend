@@ -41,7 +41,14 @@ const filteredDevices = computed(() => {
 // 获取设备数据
 const fetchDevices = async () => {
   try {
+    // console.log(props.user)
+    // console.log(props.user.userId)
     const res = await all_devices(props.user.userId)
+    if (res.data.data === null) {
+      devices.value = []
+      ElMessage.warning('您还未创建设备')
+      return
+    }
     devices.value = res.data.data
     // 为每个device添加kv isEditing:false
     devices.value = res.data.data.map(device => ({
@@ -49,7 +56,7 @@ const fetchDevices = async () => {
       isEditing: false, // 为每个设备添加编辑状态
       fullMac: false // 为每个设备添加整个mac呈现状态
     }))
-    console.log(res.data)
+    // console.log(res.data)
   } catch (error) {
     ElMessage.error('获取设备列表失败')
   }
@@ -314,6 +321,7 @@ fetchDevices()
           v-for="device in searchDevices"
           :key="device.deviceId"
           class="device-card"
+          @click="$emit('device-selected', device.deviceId)"
       >
         <!-- 保持设备卡片代码不变 -->
         <div class="card-header">
@@ -366,6 +374,7 @@ fetchDevices()
           v-for="device in devices"
           :key="device.deviceId"
           class="device-card"
+          @click="$emit('device-selected', device.deviceId)"
       >
         <!-- 保持设备卡片代码不变 -->
         <div class="card-header">

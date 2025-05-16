@@ -14,7 +14,7 @@
     </div>
 
     <!-- 动态组件容器 -->
-    <component :is="activeComponent" v-if="activeComponent" />
+    <component :is="activeComponent" v-if="activeComponent" :user="user"/>
   </div>
 </template>
 
@@ -22,7 +22,15 @@
 import { ref, computed, watch } from 'vue'
 import DevicesPage from "@/components/device_management/DevicesPage.vue"
 import DataShowPage from "@/components/device_management/DataShowPage.vue"
-
+// 从父组件传过来的user数据  从 Home.vue中
+const props = defineProps({
+  user: {
+    type: Object,
+    required: true
+  }
+})
+const user = props.user
+// console.log(user)
 // 组件映射表
 const componentMap = {
   DevicesPage,
