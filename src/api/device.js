@@ -32,6 +32,18 @@ export const search_device =(searchKey) =>{
         }
     })
 }
+// 普通用户搜索设备
+export const search_devices_by_userId = (userId,searchKey) =>{
+    return axi({
+        url: "/api/device/search_devices_by_userid",
+        method: "GET",
+        params:{
+            userId:userId,
+            searchKey:searchKey
+        }
+    })
+}
+
 // 删除设备
 export const delete_device =(deviceId) => {
     return axi({

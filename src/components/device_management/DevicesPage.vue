@@ -6,6 +6,7 @@ import {
   batch_delete_devices,
   delete_device,
   search_device,
+  search_devices_by_userId,
   update_device_name
 } from '@/api/device.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -72,7 +73,7 @@ const handleSearch = async () => {
   }
 
   try {
-    const res = await search_device(keyword)
+    const res = await search_devices_by_userId(props.user.userId,keyword)
     searchDevices.value = res.data.data || []
     // 为每个device添加kv isEditing:false
     searchDevices.value = res.data.data.map(device => ({
