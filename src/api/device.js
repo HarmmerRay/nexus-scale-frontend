@@ -82,3 +82,15 @@ export const search_device_templates = () => {
         method: "GET"
     })
 }
+
+// 修改设备启用状态
+export const change_sensor_state = (deviceId, state) =>{
+    return axi({
+        url: "/api/device/change_sensor_state",
+        method: "POST",
+        params:{
+            deviceId:deviceId,
+            state:state
+        }
+    })
+}

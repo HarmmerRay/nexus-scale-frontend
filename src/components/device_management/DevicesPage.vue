@@ -8,7 +8,8 @@ import {
   search_device,
   search_devices_by_userId,
   update_device_name,
-  search_device_templates
+  search_device_templates,
+  change_sensor_state
 } from '@/api/device.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -56,7 +57,8 @@ const fetchDevices = async () => {
     devices.value = res.data.data.map(device => ({
       ...device,
       isEditing: false, // 为每个设备添加编辑状态
-      fullMac: false // 为每个设备添加整个mac呈现状态
+      fullMac: false, // 为每个设备添加整个mac呈现状态
+      state: device.state !== undefined ? device.state : 1 // 设备状态：1在线，0离线，默认为1
     }))
     // console.log(res.data)
   } catch (error) {
@@ -80,7 +82,8 @@ const handleSearch = async () => {
     searchDevices.value = res.data.data.map(device => ({
       ...device,
       isEditing: false, // 为每个设备添加编辑状态
-      fullMac: false // 为每个设备添加整个mac呈现状态
+      fullMac: false, // 为每个设备添加整个mac呈现状态
+      state: device.state !== undefined ? device.state : 1 // 设备状态：1在线，0离线，默认为1
     }))
   } catch (error) {
     ElMessage.error('搜索设备失败')
@@ -266,6 +269,24 @@ const showFullMac = (device)=>{
   // 3秒后自动隐藏（可选）
   setTimeout(() => device.fullMac = false, 3000);
 }
+
+// 切换设备状态
+const toggleDeviceState = async (device) => {
+  const newState = device.state === 1 ? 0 : 1
+  try {
+    const res = await change_sensor_state(device.deviceId, newState)
+    if (res.data.state === 200 || res.data.code === 200) {
+      device.state = newState
+      ElMessage.success(`设备已${newState === 1 ? '开启' : '关闭'}`)
+    } else {
+      ElMessage.error('状态切换失败')
+    }
+  } catch (error) {
+    console.error('切换设备状态失败:', error)
+    ElMessage.error('状态切换失败，请检查网络连接')
+  }
+}
+
 // 初始化获取数据
 fetchDevices()
 fetchDeviceTemplates()
@@ -381,7 +402,17 @@ const emit = defineEmits(['device-selected']);
               class="device-checkbox"
               @click.stop
           >
-          <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
+          <div class="header-actions">
+            <button 
+              class="state-toggle-btn" 
+              :class="{ 'online': device.state === 1, 'offline': device.state === 0 }"
+              @click.stop="toggleDeviceState(device)"
+              :title="device.state === 1 ? '点击关闭设备' : '点击开启设备'"
+            >
+              {{ device.state === 1 ? '在线' : '离线' }}
+            </button>
+            <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
+          </div>
         </div>
         <div @click="viewDeviceDetail(device)">
           <!-- 设备名称输入框，双向绑定 device.deviceName -->
@@ -432,7 +463,17 @@ const emit = defineEmits(['device-selected']);
               class="device-checkbox"
               @click.stop
           >
-          <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
+          <div class="header-actions">
+            <button 
+              class="state-toggle-btn" 
+              :class="{ 'online': device.state === 1, 'offline': device.state === 0 }"
+              @click.stop="toggleDeviceState(device)"
+              :title="device.state === 1 ? '点击关闭设备' : '点击开启设备'"
+            >
+              {{ device.state === 1 ? '在线' : '离线' }}
+            </button>
+            <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
+          </div>
         </div>
         <div @click="$emit('device-selected', device)">
           <!-- 设备名称输入框，双向绑定 device.deviceName -->
@@ -544,9 +585,42 @@ const emit = defineEmits(['device-selected']);
   align-items: center;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .device-checkbox {
   width: 16px;
   height: 16px;
+}
+
+.state-toggle-btn {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.state-toggle-btn.online {
+  background-color: #67c23a;
+  color: white;
+}
+
+.state-toggle-btn.offline {
+  background-color: #f56c6c;
+  color: white;
+}
+
+.state-toggle-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
 }
 
 .delete-icon {
