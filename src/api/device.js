@@ -12,13 +12,14 @@ export const all_devices =(user_id) =>{
 }
 
 // 添加设备
-export const add_device =(deviceMac,deviceName) => {
+export const add_device =(deviceMac,deviceName,dtId) => {
     return axi({
         url: "/api/device/create_device",
         method: "POST",
         data:{
             deviceName:deviceName,
             deviceMac:deviceMac,
+            dtId:dtId
         }
     })
 }

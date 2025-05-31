@@ -124,9 +124,30 @@ GET /api/device/search_device_templates
 3. **维护性**：集中管理设备类型和模板
 4. **用户友好**：智能化的MAC地址生成减少用户输入错误
 
+## 🔧 后端接口更新
+
+### 创建设备接口修改
+
+**POST /api/device/create_device**
+
+新增了 `dtId` 参数：
+```json
+{
+  "deviceName": "温度传感器001",
+  "deviceMac": "TP-1234567890123456",
+  "dtId": 1
+}
+```
+
+这样后端可以：
+1. 根据 `dtId` 获取对应的数据模板
+2. 验证设备数据格式是否符合模板要求
+3. 为设备分配正确的数据结构
+
 ## 📋 待完善
 
-1. 后端接口实现 `/api/device/device_templates`
-2. 设备模板的增删改查管理界面
-3. 数据模板的验证逻辑
-4. 国际化支持（多语言设备名称） 
+1. 后端接口实现 `/api/device/search_device_templates`
+2. 更新 `/api/device/create_device` 接口支持 `dtId` 参数
+3. 设备模板的增删改查管理界面
+4. 数据模板的验证逻辑
+5. 国际化支持（多语言设备名称） 

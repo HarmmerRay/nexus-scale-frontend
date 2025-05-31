@@ -166,17 +166,8 @@ const fetchDeviceTemplates = async () => {
 const generateMacAddress = async () => {
   const type = formData.value.deviceType
   if (type === '') {
-    try {
-      // 等待用户确认
-      await ElMessageBox.confirm('请选择设备类型后再自动生成唯一标识', '警告', {
-        type: 'warning'
-      });
-      return;
-      // 用户点击确认后继续执行
-    } catch (error) {
-      // 用户点击取消，直接返回
-      return;
-    }
+    ElMessage.warning('请先选择设备类型')
+    return
   }
   
   // 从设备模板中找到对应的MAC前缀
@@ -203,10 +194,23 @@ const generateMacAddress = async () => {
 const handleSubmit = async () => {
   if (isSubmitting.value) return // 防止重复提交
   
+  // 验证是否选择了设备类型
+  if (!formData.value.deviceType) {
+    ElMessage.warning('请选择设备类型')
+    return
+  }
+  
+  // 获取选中设备模板的dtId
+  const selectedTemplate = deviceTemplates.value.find(template => template.enName === formData.value.deviceType)
+  if (!selectedTemplate) {
+    ElMessage.error('未找到选中的设备模板')
+    return
+  }
+  
   isSubmitting.value = true
   try {
-    // 调用添加设备API
-    const res = await add_device(formData.value.macAddress, formData.value.deviceName)
+    // 调用添加设备API，传递dtId
+    const res = await add_device(formData.value.macAddress, formData.value.deviceName, selectedTemplate.dtId)
     
     if (res.data.state === 200 || res.data.code === 200) {
       // 成功提示
@@ -233,7 +237,12 @@ const handleAddDevice = () => {
   // 重置表单和状态
   formData.value = { deviceName: '', deviceType: '', macAddress: '' }
   isSubmitting.value = false
-  console.log('打开新增设备对话框，当前设备模板数量:', deviceTemplates.value.length)
+  // 确保设备模板已加载
+  if (deviceTemplates.value.length === 0) {
+    ElMessage.warning('设备模板加载中，请稍后再试')
+    fetchDeviceTemplates()
+    return
+  }
   showDialog.value = true
 }
 
