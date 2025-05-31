@@ -128,6 +128,7 @@ const handleSingleDelete = async (deviceId) => {
 // 控制对话框显示
 const showDialog = ref(false)
 const isTestMode = ref(true) // 测试环境标识
+const isSubmitting = ref(false) // 提交状态
 
 // 表单数据
 const formData = ref({
@@ -180,25 +181,40 @@ const generateMacAddress = async () => {
 }
 
 // 表单提交处理
-const handleSubmit = () => {
-  // 这里添加实际的设备添加逻辑
-  console.log('准备添加设备:', {
-    ...formData.value,
-    timestamp: new Date().toISOString()
-  })
-  add_device(formData.value.macAddress,formData.value.deviceName).then(res => {
-    console.log(res.data)
-  })
-  // 重置表单并关闭对话框
-  formData.value = { deviceName: '', deviceType: '', macAddress: '' }
-  showDialog.value = false
+const handleSubmit = async () => {
+  if (isSubmitting.value) return // 防止重复提交
+  
+  isSubmitting.value = true
+  try {
+    // 调用添加设备API
+    const res = await add_device(formData.value.macAddress, formData.value.deviceName)
+    
+    if (res.data.state === 200 || res.data.code === 200) {
+      // 成功提示
+      ElMessage.success('设备添加成功')
+      
+      // 重置表单并关闭对话框
+      formData.value = { deviceName: '', deviceType: '', macAddress: '' }
+      showDialog.value = false
+      
+      // 刷新设备列表
+      await fetchDevices()
+    } else {
+      ElMessage.error(res.data.message || res.data.msg || '添加设备失败')
+    }
+  } catch (error) {
+    console.error('添加设备错误:', error)
+    ElMessage.error('添加设备失败，请检查网络连接')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 // 新增设备（示例）
 const handleAddDevice = () => {
+  // 重置表单和状态
+  formData.value = { deviceName: '', deviceType: '', macAddress: '' }
+  isSubmitting.value = false
   showDialog.value = true
-  // 弹出对话框，添加一台设备
-  // 对话框就是添加设备的对话框，有三个参数 设备名、设备种类、设备Mac号（本来应该用户自己输入，但是测试环境这个Mac号输入框后面跟一个测试生成按钮，自动根据设备种类生成一个）、
-  console.log('打开新增设备界面')
 }
 
 const viewDeviceDetail = async (device) => {
@@ -306,8 +322,10 @@ const emit = defineEmits(['device-selected']);
 
                 <!-- 操作按钮 -->
                 <div class="form-actions">
-                  <button type="submit" class="submit-btn">确认添加</button>
-                  <button type="button" class="cancel-btn" @click="showDialog = false">取消</button>
+                  <button type="submit" class="submit-btn" :disabled="isSubmitting">
+                    {{ isSubmitting ? '添加中...' : '确认添加' }}
+                  </button>
+                  <button type="button" class="cancel-btn" @click="showDialog = false" :disabled="isSubmitting">取消</button>
                 </div>
               </form>
             </div>
@@ -324,7 +342,7 @@ const emit = defineEmits(['device-selected']);
           v-for="device in searchDevices"
           :key="device.deviceId"
           class="device-card"
-          @click="$emit('device-selected', device.deviceId)"
+          @click="$emit('device-selected', device)"
       >
         <!-- 保持设备卡片代码不变 -->
         <div class="card-header">
@@ -388,7 +406,7 @@ const emit = defineEmits(['device-selected']);
           >
           <button class="delete-icon" @click.stop="handleSingleDelete(device.deviceId)">×</button>
         </div>
-        <div @click="$emit('device-selected', device.deviceId)">
+        <div @click="$emit('device-selected', device)">
           <!-- 设备名称输入框，双向绑定 device.deviceName -->
           <h3
               v-if="!device.isEditing"
@@ -663,8 +681,13 @@ input[type="text"], select {
   transition: background-color 0.3s ease;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   background-color: #45a049;
+}
+
+.submit-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 .cancel-btn {
@@ -678,8 +701,13 @@ input[type="text"], select {
   transition: background-color 0.3s ease;
 }
 
-.cancel-btn:hover {
+.cancel-btn:hover:not(:disabled) {
   background-color: #d32f2f;
+}
+
+.cancel-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 /* 过渡动画 */
