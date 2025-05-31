@@ -73,3 +73,11 @@ export const update_device_name =(deviceId,deviceName) => {
         }
     })
 }
+
+// 获取设备模板列表
+export const search_device_templates = () => {
+    return axi({
+        url: "/api/device/search_device_templates",
+        method: "GET"
+    })
+}

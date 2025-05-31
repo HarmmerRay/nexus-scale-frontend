@@ -7,7 +7,8 @@ import {
   delete_device,
   search_device,
   search_devices_by_userId,
-  update_device_name
+  update_device_name,
+  search_device_templates
 } from '@/api/device.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -138,18 +139,28 @@ const formData = ref({
   macAddress: ''
 })
 
-// Mac地址生成规则
-const macPrefixMap = {
-  temperature: 'TP',
-  humidity: 'HM',
-  air_component: 'AC',
-  soil_NPK: 'NPK',
-  soil_PH: 'PH',
-  soil_trace_elements: 'TE',
-  wind_speed: 'WS',
-  wind_direction: 'WD',
-  light_intensity: 'LI'
+// 设备模板数据
+const deviceTemplates = ref([])
+
+// 获取设备模板
+const fetchDeviceTemplates = async () => {
+  try {
+    const res = await search_device_templates()
+    // console.log('设备模板接口响应:', res)
+    // 修正数据结构访问路径
+    if (res.data.state === 200) {  
+      deviceTemplates.value = res.data.data || []
+      // console.log('设备模板数据:', deviceTemplates.value)
+    } else {
+      ElMessage.error('获取设备模板失败')
+    }
+  } catch (error) {
+    // console.error('获取设备模板错误:', error)
+    ElMessage.error('获取设备模板失败')
+  }
 }
+
+
 
 // 生成测试Mac地址
 const generateMacAddress = async () => {
@@ -167,18 +178,25 @@ const generateMacAddress = async () => {
       return;
     }
   }
-  const prefix = macPrefixMap[type]
+  
+  // 从设备模板中找到对应的MAC前缀
+  const selectedTemplate = deviceTemplates.value.find(template => template.enName === type)
+  if (!selectedTemplate || !selectedTemplate.macPre) {
+    ElMessage.error('未找到该设备类型的MAC前缀配置')
+    return
+  }
+  
+  const prefix = selectedTemplate.macPre
   // 生成时间戳部分（毫秒级）
-  const timestamp = Date.now().toString();
+  const timestamp = Date.now().toString().slice(-8); // 取后8位
 
-// 生成8位随机数字部分
-  const randomDigits = Math.floor(Math.random() * 100000000)
+  // 生成6位随机数字部分
+  const randomDigits = Math.floor(Math.random() * 1000000)
       .toString()
-      .padStart(8, '0');
+      .padStart(6, '0');
 
-// 组合两部分形成完整的随机字符串
-  const randomPart = `${timestamp}${randomDigits}`;
-  formData.value.macAddress = `${prefix}-${randomPart}`
+  // 组合形成完整的MAC地址
+  formData.value.macAddress = `${prefix}-${timestamp}${randomDigits}`
 }
 
 // 表单提交处理
@@ -215,6 +233,7 @@ const handleAddDevice = () => {
   // 重置表单和状态
   formData.value = { deviceName: '', deviceType: '', macAddress: '' }
   isSubmitting.value = false
+  console.log('打开新增设备对话框，当前设备模板数量:', deviceTemplates.value.length)
   showDialog.value = true
 }
 
@@ -238,8 +257,9 @@ const showFullMac = (device)=>{
   // 3秒后自动隐藏（可选）
   setTimeout(() => device.fullMac = false, 3000);
 }
-// 初始化获取设备
+// 初始化获取数据
 fetchDevices()
+fetchDeviceTemplates()
 // 父子组件通信，向父组件发送事件
 const emit = defineEmits(['device-selected']);
 
@@ -289,15 +309,13 @@ const emit = defineEmits(['device-selected']);
                   <label>设备类型</label>
                   <select v-model="formData.deviceType" required>
                     <option value="">请选择类型</option>
-                    <option value="temperature">温度传感器</option>
-                    <option value="humidity">湿度传感器</option>
-                    <option value="air_component">空气成分传感器</option>
-                    <option value="soil_NPK">土壤氮磷钾传感器</option>
-                    <option value="soil_PH">PH值传感器</option>
-                    <option value="soil_trace_elements">微量元素传感器</option>
-                    <option value="wind_speed">风速传感器</option>
-                    <option value="wind_direction">风向传感器</option>
-                    <option value="light_intensity">光照强度传感器</option>
+                    <option 
+                      v-for="template in deviceTemplates" 
+                      :key="template.dtId" 
+                      :value="template.enName"
+                    >
+                      {{ template.showName }}
+                    </option>
                   </select>
                 </div>
 
