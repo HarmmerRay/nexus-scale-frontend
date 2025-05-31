@@ -8,6 +8,10 @@
       </div>
 
       <div class="user-info">
+        <div class="greeting-section">
+          <span class="greeting-text">{{ currentTimeGreeting }}</span>
+          <span class="greeting-username">{{ user.userName }}</span>
+        </div>
         <img :src="user.avatarUrl" alt="用户头像" class="avatar" />
         <span class="username">{{user.userName}}</span>
         <div class="dropdown" @click="showMenu = !showMenu">
@@ -88,7 +92,7 @@
 </template>
 
 <script setup>
-import {computed, ref} from 'vue'
+import {computed, ref, onMounted, onUnmounted} from 'vue'
 import { useRouter } from 'vue-router'
 import logo from '@/assets/logo-transparent.png'
 import {useUserStore} from "@/store/userStore.js";
@@ -105,6 +109,26 @@ import {ElMessage} from "element-plus";
 
 const showMenu = ref(false)
 const activeMenu = ref('device')
+
+// 问候语相关
+const currentTimeGreeting = ref('')
+let timeUpdateInterval = null
+
+// 根据当前时间计算问候语
+const updateGreeting = () => {
+  const hour = new Date().getHours()
+  let timeOfDay = ''
+  
+  if (hour >= 0 && hour < 12) {
+    timeOfDay = '上午好!'
+  } else if (hour >= 12 && hour < 18) {
+    timeOfDay = '下午好!'
+  } else {
+    timeOfDay = '晚上好!'
+  }
+  
+  currentTimeGreeting.value = `欢迎回来，${timeOfDay}`
+}
 
 const router = useRouter()
 
@@ -182,6 +206,20 @@ const handleAvatarChange = (event) =>{
   // console.log()
 //   更换头像
 }
+
+// 组件挂载时设置定时器
+onMounted(() => {
+  updateGreeting() // 立即更新一次
+  // 每分钟更新一次问候语，以防跨越时间段
+  timeUpdateInterval = setInterval(updateGreeting, 60000)
+})
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  if (timeUpdateInterval) {
+    clearInterval(timeUpdateInterval)
+  }
+})
 </script>
 
 <style scoped>
@@ -222,6 +260,31 @@ const handleAvatarChange = (event) =>{
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.greeting-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-right: 10px;
+}
+
+.greeting-text {
+  font-size: 14px;
+  color: #666;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.greeting-username {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.username {
+  display: none; /* 桌面端隐藏，移动端显示 */
 }
 
 .avatar {
@@ -433,5 +496,36 @@ const handleAvatarChange = (event) =>{
 .form-actions button[type="submit"]:hover {
   background-color: #0056b3;
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* 响应式设计 - 移动端适配 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 20px;
+  }
+  
+  .greeting-section {
+    display: none; /* 在小屏幕上隐藏问候语，节省空间 */
+  }
+  
+  .user-info {
+    gap: 10px;
+  }
+  
+  .user-info .username {
+    display: block; /* 在小屏幕上重新显示用户名 */
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-area .title {
+    font-size: 16px;
+  }
+  
+  .avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
 }
 </style>
