@@ -1,5 +1,12 @@
 <script setup>
 import {nextTick, ref} from 'vue';
+import { customer_service } from '@/api/user.js';
+import { useUserStore } from '@/store/userStore.js';
+
+// 从Pinia store获取用户信息
+const userStore = useUserStore();
+const user = userStore.getUser;
+const userId = ref(user?.userId);
 
 // 模拟聊天记录
 const messages = ref([
@@ -19,6 +26,7 @@ const downloadQRCode = () => {
 };
 
 const messageText = ref("")
+const isLoading = ref(false)
 
 const chatContainer = ref(null);
 // 滚动到底部函数
@@ -29,26 +37,80 @@ const scrollToBottom = () => {
 };
 
 const sendMessage = async () => {
-  if (!messageText.value.trim()) return
+  if (!messageText.value.trim() || isLoading.value) return
+  
+  // 检查用户是否已登录
+  if (!user || !userId.value) {
+    messages.value.push({
+      text: '请先登录后再使用客服功能',
+      isBot: true
+    });
+    await nextTick();
+    scrollToBottom();
+    return;
+  }
 
+  const userMessage = messageText.value;
+  
   // 添加用户消息（右侧显示）
   messages.value.push({
-    text: messageText.value,
+    text: userMessage,
     isBot: false  // 确保这个值为false
   })
+  
+  // 清空输入框
+  messageText.value = '';
+  isLoading.value = true;
+  
   // 确保DOM更新后滚动到底部
   await nextTick();
   scrollToBottom();
 
-  // 模拟客服回复（左侧显示）
-  setTimeout(() => {
+  // 添加正在输入的提示
+  messages.value.push({
+    text: '客服正在输入中...',
+    isBot: true,
+    isTyping: true
+  });
+  
+  await nextTick();
+  scrollToBottom();
+
+  try {
+    // 调用真实的客服API
+    const response = await customer_service(userId.value, userMessage);
+    console.log(response.data)
+    // 移除正在输入的提示
+    messages.value = messages.value.filter(msg => !msg.isTyping);
+    
+    // 添加客服回复（左侧显示）
     messages.value.push({
-      text: '已收到您的消息...',
-      isBot: true  // 确保这个值为true
-    })
-    nextTick(scrollToBottom); // 新增：客服回复后滚动
-  }, 1000)
-  messageText.value = '';
+      text: response.data.data || '客服已收到您的消息，稍后会为您处理',
+      isBot: true
+    });
+    
+    // 滚动到底部
+    await nextTick();
+    scrollToBottom();
+    
+  } catch (error) {
+    console.error('发送消息失败:', error);
+    
+    // 移除正在输入的提示
+    messages.value = messages.value.filter(msg => !msg.isTyping);
+    
+    // 添加错误提示消息
+    messages.value.push({
+      text: '抱歉，消息发送失败，请稍后重试或联系客服电话：400-123-4567',
+      isBot: true
+    });
+    
+    // 滚动到底部
+    await nextTick();
+    scrollToBottom();
+  } finally {
+    isLoading.value = false;
+  }
 }
 </script>
 
@@ -68,7 +130,8 @@ const sendMessage = async () => {
             :key="index"
             :class="['message', {
             'bot-message': msg.isBot,
-            'user-message': !msg.isBot
+            'user-message': !msg.isBot,
+            'typing-message': msg.isTyping
           }]"
         >
           {{ msg.text }}
@@ -83,7 +146,9 @@ const sendMessage = async () => {
             @keyup.enter.exact="sendMessage"
             rows="1"
         ></textarea>
-        <button @click="sendMessage" class="send-btn">发送</button>
+        <button @click="sendMessage" class="send-btn" :disabled="isLoading">
+          {{ isLoading ? '发送中...' : '发送' }}
+        </button>
       </div>
     </div>
 
@@ -174,6 +239,13 @@ const sendMessage = async () => {
   background-color: #0084ff; /* 蓝色背景 */
   color: white;
   align-self: flex-end; /* 右对齐 */
+}
+
+.typing-message {
+  background-color: #e8f4fd; /* 更浅的背景色 */
+  color: #666;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 /* 右边联系信息样式 */
@@ -296,8 +368,13 @@ textarea {
   transition: background 0.2s;
 }
 
-.send-btn:hover {
+.send-btn:hover:not(:disabled) {
   background: #06ad56;
+}
+
+.send-btn:disabled {
+  background: #95d5b2;
+  cursor: not-allowed;
 }
 
 /* 优化消息样式 */

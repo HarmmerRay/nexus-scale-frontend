@@ -120,12 +120,24 @@ export const change_phone_number = (id,phone_number) => {
         }
     })
 }
+
 export const search_users = (keyword) => {
     return axi({
         url: "/api/user/search_users",
         method: "POST",
         params:{
             keyword:keyword
+        }
+    })
+}
+
+export const customer_service = (user_id,message) => {
+    return axi({
+        url: "/api/user/customer_service",
+        method: "POST",
+        params:{
+            userId:user_id,
+            message:message
         }
     })
 }
