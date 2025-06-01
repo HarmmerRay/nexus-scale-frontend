@@ -1,12 +1,29 @@
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
+import { get_device_data } from '@/api/device'
 
 const props = defineProps({
   device: {
     type: Object,
-    required: true
+    required: false,
+    default: () => ({})
   }
+})
+
+// 防御性编程：确保设备信息存在
+const safeDevice = computed(() => {
+  console.log('DataShowPage: 接收到的device prop', props.device)
+  
+  const safe = {
+    deviceId: props.device?.deviceId || null,
+    deviceName: props.device?.deviceName || '未知设备',
+    deviceMac: props.device?.deviceMac || '未知设备号',
+    ...props.device
+  }
+  
+  console.log('DataShowPage: 安全的设备对象', safe)
+  return safe
 })
 
 // 时间区间配置
@@ -41,10 +58,60 @@ const chartData = ref({
   values: []
 })
 
+// 安全的图表数据访问
+const safeChartData = computed(() => ({
+  times: chartData.value?.times || [],
+  values: chartData.value?.values || []
+}))
+
 // 加载状态
 const loading = ref(true)
 
-// 生成假数据
+// 获取设备数据
+const fetchDeviceData = async () => {
+  try {
+    // 检查设备ID是否存在
+    if (!safeDevice.value.deviceId) {
+      console.warn('设备ID不存在，使用模拟数据')
+      return generateMockData()
+    }
+
+    const range = selectedTimeRange.value
+    let timePeriodHours = 0
+    
+    // 将时间段转换为小时
+    if (range.unit === 'hour') {
+      timePeriodHours = range.value
+    } else if (range.unit === 'day') {
+      timePeriodHours = range.value * 24
+    }
+    
+    // 调用API获取数据
+    const response = await get_device_data(
+      safeDevice.value.deviceId, // 设备ID
+      timePeriodHours,            // 过去时段（小时）
+      range.interval              // 数据采样间隔（分钟）
+    )
+    console.log("response.data:",response.data)
+    
+    // 后端返回的数据格式：{ msg, data: { times, values }, state }
+    // 我们需要的是 response.data.data
+    const apiData = response.data.data
+    
+    // 确保返回的数据结构正确
+    return {
+      times: apiData?.times || [],
+      values: apiData?.values || []
+    }
+    
+  } catch (error) {
+    console.error('获取设备数据失败:', error)
+    // 如果API调用失败，返回生成的假数据作为fallback
+    return generateMockData()
+  }
+}
+
+// 生成假数据（作为fallback）
 const generateMockData = () => {
   const data = {
     times: [],
@@ -115,7 +182,7 @@ const initChart = () => {
   
   const option = {
     title: {
-      text: `${props.device.deviceName} - 温度数据`,
+      text: `${safeDevice.value.deviceName} - 温度数据`,
       left: 'center',
       textStyle: {
         fontSize: 16,
@@ -151,7 +218,7 @@ const initChart = () => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: chartData.value.times,
+      data: safeChartData.value.times,
       axisLabel: {
         rotate: 45,
         fontSize: 10
@@ -177,7 +244,7 @@ const initChart = () => {
         areaStyle: {
           opacity: 0.1
         },
-        data: chartData.value.values,
+        data: safeChartData.value.values,
         itemStyle: {
           color: '#409eff'
         }
@@ -201,24 +268,27 @@ const updateChart = () => {
   
   chartInstance.setOption({
     xAxis: {
-      data: chartData.value.times
+      data: safeChartData.value.times
     },
     series: [{
-      data: chartData.value.values
+      data: safeChartData.value.values
     }]
   })
 }
 
 // 切换时间区间
-const handleTimeRangeChange = () => {
+const handleTimeRangeChange = async () => {
   loading.value = true
   
-  // 模拟加载延迟
-  setTimeout(() => {
-    chartData.value = generateMockData()
+  try {
+    // 获取真实数据
+    chartData.value = await fetchDeviceData()
     updateChart()
+  } catch (error) {
+    console.error('更新数据失败:', error)
+  } finally {
     loading.value = false
-  }, 300)
+  }
 }
 
 // 刷新数据
@@ -230,13 +300,17 @@ const refreshData = () => {
 onMounted(async () => {
   await nextTick()
   
-  // 生成初始数据
-  chartData.value = generateMockData()
-  
-  // 初始化图表
-  initChart()
-  
-  loading.value = false
+  try {
+    // 获取初始数据
+    chartData.value = await fetchDeviceData()
+    
+    // 初始化图表
+    initChart()
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+  } finally {
+    loading.value = false
+  }
 })
 
 // 监听时间区间变化
@@ -264,8 +338,8 @@ defineExpose({
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="device-info">
-        <h2>{{ device.deviceName }}</h2>
-        <span class="device-mac">设备号: {{ device.deviceMac }}</span>
+        <h2>{{ safeDevice.deviceName }}</h2>
+        <span class="device-mac">设备号: {{ safeDevice.deviceMac }}</span>
       </div>
       
       <!-- 操作区域 -->
@@ -331,25 +405,25 @@ defineExpose({
     </div>
 
     <!-- 数据统计 -->
-    <div class="data-stats" v-if="!loading && chartData.values.length > 0">
+    <div class="data-stats" v-if="!loading && safeChartData.values.length > 0">
       <div class="stats-card">
         <h4>数据统计</h4>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">最新值</span>
-            <span class="stat-value">{{ chartData.values[chartData.values.length - 1] }}{{ sensorConfig.temperature.unit }}</span>
+            <span class="stat-value">{{ safeChartData.values[safeChartData.values.length - 1] }}{{ sensorConfig.temperature.unit }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">最大值</span>
-            <span class="stat-value">{{ Math.max(...chartData.values).toFixed(1) }}{{ sensorConfig.temperature.unit }}</span>
+            <span class="stat-value">{{ Math.max(...safeChartData.values).toFixed(1) }}{{ sensorConfig.temperature.unit }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">最小值</span>
-            <span class="stat-value">{{ Math.min(...chartData.values).toFixed(1) }}{{ sensorConfig.temperature.unit }}</span>
+            <span class="stat-value">{{ Math.min(...safeChartData.values).toFixed(1) }}{{ sensorConfig.temperature.unit }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">平均值</span>
-            <span class="stat-value">{{ (chartData.values.reduce((a, b) => a + b, 0) / chartData.values.length).toFixed(1) }}{{ sensorConfig.temperature.unit }}</span>
+            <span class="stat-value">{{ (safeChartData.values.reduce((a, b) => a + b, 0) / safeChartData.values.length).toFixed(1) }}{{ sensorConfig.temperature.unit }}</span>
           </div>
         </div>
       </div>

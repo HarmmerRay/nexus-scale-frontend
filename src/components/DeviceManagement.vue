@@ -15,7 +15,13 @@
     </div>
 
     <!-- 动态组件容器 -->
-    <component :is="activeComponent" v-if="activeComponent" :user="user" @device-selected="handleDeviceSelect"/>
+    <component 
+      :is="activeComponent" 
+      v-if="activeComponent" 
+      :user="user" 
+      :device="currentDevice"
+      @device-selected="handleDeviceSelect"
+    />
   </div>
 </template>
 
@@ -44,6 +50,7 @@ const tabs = ref([
 ])
 const activeTab = ref("设备页")
 const currentDeviceId = ref(null)
+const deviceStorage = ref(new Map()) // 存储设备信息
 
 // 动态计算标签页显示名称
 const computeTabDisplayNames = () => {
@@ -89,10 +96,31 @@ const activeComponent = computed(() => {
   return activeTabInfo ? componentMap[activeTabInfo.component] : null
 })
 
+// 计算当前设备信息
+const currentDevice = computed(() => {
+  const activeTabInfo = tabs.value.find(tab => tab.name === activeTab.value)
+  console.log('DeviceManagement: 当前激活标签页', activeTabInfo)
+  
+  if (activeTabInfo && activeTabInfo.deviceId) {
+    const device = deviceStorage.value.get(activeTabInfo.deviceId)
+    console.log('DeviceManagement: 获取到设备信息', device)
+    return device
+  }
+  
+  console.log('DeviceManagement: 无设备信息')
+  return null
+})
+
 // 处理设备选择事件
 const handleDeviceSelect = (device) => {
+  console.log('DeviceManagement: 接收到设备选择事件', device)
+  
   const tabName = device.deviceName
   const deviceId = device.deviceId
+
+  // 存储设备信息
+  deviceStorage.value.set(deviceId, device)
+  console.log('DeviceManagement: 设备信息已存储', { deviceId, device })
 
   // 检查是否已存在相同设备ID的标签页
   if (!tabs.value.some(tab => tab.deviceId === deviceId)) {
@@ -105,6 +133,7 @@ const handleDeviceSelect = (device) => {
       closable: true,
       component: 'DataShowPage'
     })
+    console.log('DeviceManagement: 创建新标签页', tabName)
   }
 
   activateTab(tabName)

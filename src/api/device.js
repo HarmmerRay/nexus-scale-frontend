@@ -94,3 +94,16 @@ export const change_sensor_state = (deviceId, state) =>{
         }
     })
 }
+
+// 获取设备数据
+export const get_device_data = (deviceId, timePeriodHours, samplingIntervalMinutes) => {
+    return axi({
+        url: "/api/device/get_device_data",
+        method: "GET",
+        params: {
+            deviceId: deviceId,
+            timePeriodHours: timePeriodHours,
+            samplingIntervalMinutes: samplingIntervalMinutes
+        }
+    })
+}
