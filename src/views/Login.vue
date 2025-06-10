@@ -296,6 +296,11 @@ const handleLogin = () => {
     showPopWindow('请输入正确的手机号')
     return false
   }
+  // 检查用户协议和隐私政策是否同意
+  if (!agree.value){
+    showPopWindow('请阅览并勾选用户协议与隐私政策')
+    return false;
+  }
   login_register(phone.value,verifyCode.value).then(res => {
     // console.log(res.data)
     if (res.data.state === 200) {

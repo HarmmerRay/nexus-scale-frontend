@@ -19,6 +19,7 @@
           <ul v-show="showMenu" class="dropdown-menu">
             <li @click="showProfileModal = true">个人信息</li>
             <li @click="handleLogout">退出登录</li>
+            <li @click="handleDeleteAccount" class="delete-account">注销账号</li>
           </ul>
         </div>
       </div>
@@ -104,8 +105,8 @@ import LogManagement from "@/components/LogManagement.vue";
 import HelpCenter from "@/components/HelpCenter.vue";
 import ConnectUs from "@/components/ConnectUs.vue";
 import ContactPrivacy from "@/components/ContactPrivacy.vue";
-import {change_avatar, change_phone_number, change_user_name, upload_avatar} from "@/api/user.js";
-import {ElMessage} from "element-plus";
+import {change_avatar, change_phone_number, change_user_name, upload_avatar, deleteUser} from "@/api/user.js";
+import {ElMessage, ElMessageBox} from "element-plus";
 
 const showMenu = ref(false)
 const activeMenu = ref('device')
@@ -249,6 +250,60 @@ onUnmounted(() => {
     clearInterval(timeUpdateInterval)
   }
 })
+
+const handleDeleteAccount = async () => {
+  showMenu.value = false // 关闭下拉菜单
+  
+  try {
+    // 第一次确认
+    await ElMessageBox.confirm(
+      '注销账号后将无法恢复，您确定要继续吗？',
+      '确认注销账号',
+      {
+        confirmButtonText: '继续',
+        cancelButtonText: '取消',
+        type: 'warning',
+        customClass: 'delete-confirm-dialog'
+      }
+    )
+    
+    // 第二次确认
+    await ElMessageBox.confirm(
+      `您即将注销账号"${user.userName}"，此操作不可逆转。请再次确认您的决定。`,
+      '最终确认注销',
+      {
+        confirmButtonText: '确认注销',
+        cancelButtonText: '取消',
+        type: 'error',
+        customClass: 'delete-confirm-dialog'
+      }
+    )
+    
+    // 调用删除账号API
+    const response = await deleteUser(user.userId)
+    
+    if (response.data.success) {
+      ElMessage.success('账号注销成功')
+      
+      // 清空用户数据
+      userStore.clearUser()
+      
+      // 清空Cookie
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      
+      // 跳转到登录页面
+      router.push('/login')
+    } else {
+      ElMessage.error('账号注销失败，请重试')
+    }
+    
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('注销账号时发生错误:', error)
+      ElMessage.error('注销账号时发生错误，请重试')
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -348,6 +403,16 @@ onUnmounted(() => {
 
 .dropdown-menu li:hover {
   background: #f5f5f5;
+}
+
+.dropdown-menu li.delete-account {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+.dropdown-menu li.delete-account:hover {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .main-content {
@@ -556,5 +621,29 @@ onUnmounted(() => {
     width: 40px !important;
     height: 40px !important;
   }
+}
+
+/* 删除确认对话框样式 */
+:deep(.delete-confirm-dialog) {
+  border-radius: 12px;
+}
+
+:deep(.delete-confirm-dialog .el-message-box__title) {
+  font-weight: 600;
+  color: #e74c3c;
+}
+
+:deep(.delete-confirm-dialog .el-message-box__content) {
+  padding: 20px 20px 10px;
+}
+
+:deep(.delete-confirm-dialog .el-button--primary) {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+:deep(.delete-confirm-dialog .el-button--primary:hover) {
+  background-color: #dc2626;
+  border-color: #dc2626;
 }
 </style>
