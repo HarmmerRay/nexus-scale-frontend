@@ -92,7 +92,7 @@
 </template>
 
 <script setup>
-import {computed, ref, onMounted, onUnmounted} from 'vue'
+import {computed, ref, onMounted, onUnmounted, watch} from 'vue'
 import { useRouter } from 'vue-router'
 import logo from '@/assets/logo-transparent.png'
 import {useUserStore} from "@/store/userStore.js";
@@ -137,16 +137,31 @@ const user = userStore.getUser
 console.log(user)
 // console.log(user)
 // console.log(user.avatarUrl)
-// 菜单项（暂硬编码，后续接权限系统）
-const menuItems = ref([
-  { name: 'device', label: '设备管理' },
-  { name: 'user', label: '用户管理' },
-  { name: 'server', label: '服务器监控' },
-  { name: 'log', label: '日志管理' },
-  { name: 'help', label: '帮助中心' },
-  { name: 'connect', label: '联系我们' },
-  { name: 'contact', label: '协议政策' }
-])
+// 菜单项根据用户权限动态生成
+const menuItems = computed(() => {
+  const commonItems = [
+    { name: 'device', label: '设备管理' },
+    { name: 'help', label: '帮助中心' },
+    { name: 'connect', label: '联系我们' },
+    { name: 'contact', label: '协议政策' }
+  ]
+  
+  // 管理员权限菜单项
+  const adminItems = [
+    { name: 'device', label: '设备管理' },
+    { name: 'user', label: '用户管理' },
+    { name: 'server', label: '服务器监控' },
+    { name: 'log', label: '日志管理' },
+    { name: 'help', label: '帮助中心' },
+    { name: 'connect', label: '联系我们' },
+    { name: 'contact', label: '协议政策' }
+  ]
+  
+  // 根据用户level返回对应菜单项
+  // level 0: 管理员，显示所有菜单
+  // level 1: 普通用户，只显示基础菜单
+  return user.level === 0 ? adminItems : commonItems
+})
 
 const activeComponent = computed(()=> {
   switch (activeMenu.value) {
@@ -207,9 +222,23 @@ const handleAvatarChange = (event) =>{
 //   更换头像
 }
 
+// 检查当前菜单项是否有效，如果无效则切换到默认菜单
+const validateActiveMenu = () => {
+  const currentMenuNames = menuItems.value.map(item => item.name)
+  if (!currentMenuNames.includes(activeMenu.value)) {
+    activeMenu.value = 'device' // 默认切换到设备管理页面
+  }
+}
+
+// 监听菜单项变化，当权限变化时重新验证当前菜单
+watch(menuItems, () => {
+  validateActiveMenu()
+}, { deep: true })
+
 // 组件挂载时设置定时器
 onMounted(() => {
   updateGreeting() // 立即更新一次
+  validateActiveMenu() // 验证当前菜单项是否有效
   // 每分钟更新一次问候语，以防跨越时间段
   timeUpdateInterval = setInterval(updateGreeting, 60000)
 })

@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 import DataShowPage from './DataShowPage.vue'
 
-// 模拟设备数据
+// 模拟设备数据（设置deviceId为null以使用模拟数据）
 const mockDevice = ref({
-  deviceId: 1,
+  deviceId: null, // 设置为null以强制使用模拟数据
   deviceName: '温度传感器A01',
   deviceMac: 'TP-12345678901234',
   state: 1
